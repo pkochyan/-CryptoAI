@@ -2,30 +2,37 @@
 pragma solidity ^0.8.0;
 
 interface IVirtualAsset {
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 amount) external returns (bool);
 }
 
 contract CryptoAI {
     IVirtualAsset public virtualAsset;
+    mapping(address => uint256) public balances;
 
-    constructor(address virtualAssetAddress) {
-        virtualAsset = IVirtualAsset(virtualAssetAddress);
+    event Deposited(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+
+    constructor(address _virtualAsset) {
+        virtualAsset = IVirtualAsset(_virtualAsset);
     }
 
     function deposit(uint256 amount) external {
-        require(amount > 0, "Deposit amount must be greater than 0");
-        virtualAsset.transferFrom(msg.sender, address(this), amount);
+        require(amount > 0, "Amount must be greater than 0");
+        require(virtualAsset.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+
+        balances[msg.sender] += amount;
+        emit Deposited(msg.sender, amount);
     }
 
     function withdraw(uint256 amount) external {
-        require(amount > 0, "Withdrawal amount must be greater than 0");
-        require(virtualAsset.balanceOf(address(this)) >= amount, "Insufficient balance");
+        require(amount > 0, "Amount must be greater than 0");
+        require(balances[msg.sender] >= amount, "Insufficient balance");
 
-        // Ensure that the transfer is performed before the state is updated
-        (bool success, ) = msg.sender.call{value: 0}("");
-        require(success, "Transfer failed");
+        balances[msg.sender] -= amount;
+        require(virtualAsset.transfer(msg.sender, amount), "Transfer failed");
 
-        virtualAsset.transfer(msg.sender, amount);
+        emit Withdrawn(msg.sender, amount);
     }
 }
