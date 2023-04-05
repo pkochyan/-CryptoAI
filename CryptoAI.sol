@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "./IToken.sol";
@@ -27,4 +26,17 @@ contract CryptoAI {
 
     function withdraw(uint256 amount) external {
         require(amount > 0, "Amount must be greater than zero");
-        require(balances[msg.sender] >= amount, "Ins
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+
+        balances[msg.sender] -= amount;
+
+        require(token.transfer(msg.sender, amount), "Transfer failed");
+
+        emit Withdrawal(msg.sender, amount);
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
+    }
+}
+
