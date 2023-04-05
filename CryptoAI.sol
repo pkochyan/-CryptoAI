@@ -1,34 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface Token {
-    function transfer(address to, uint256 amount) external;
-    function balanceOf(address owner) external view returns (uint256);
+interface IToken {
+    function transfer(address recipient, uint256 amount) external view returns (bool);
+    function balanceOf(address account) external view returns (uint256);
 }
 
 contract CryptoAI {
-    Token public token;
+    IToken public token;
     mapping(address => uint256) public balances;
-    
-    constructor(address _tokenAddress) {
-        token = Token(_tokenAddress);
+
+    constructor(address tokenAddress) {
+        token = IToken(tokenAddress);
     }
-    
+
     function deposit(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than 0");
-        require(token.balanceOf(msg.sender) >= amount, "Insufficient balance");
-        token.transfer(address(this), amount);
+        require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
         balances[msg.sender] += amount;
     }
-    
+
     function withdraw(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than 0");
         require(balances[msg.sender] >= amount, "Insufficient balance");
+        require(token.transfer(msg.sender, amount), "Transfer failed");
         balances[msg.sender] -= amount;
-        token.transfer(msg.sender, amount);
     }
-    
+
     function getBalance() public view returns (uint256) {
-        return balances[msg.sender];
+        return token.balanceOf(address(this));
     }
 }
